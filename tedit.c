@@ -1,15 +1,38 @@
+/*** includes ***/
 #include <ctype.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <termios.h>
 #include <unistd.h>
 
+/*** data ***/
+
 struct termios orig_termios;
 
-void disableRawMode() { tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios); }
+/*** terminal ***/
+
+// Most C library functions that fail will set the global `errno` variable
+// to indicate what the error was. `perror()` looks at the global errno variable
+// and prints a descriptive error message for it. Also prints the string
+// given to it before it prints the error message, which is meant to provide
+// context about what part of your code caused the error.
+void die(const char *s) {
+    perror(s);
+    // exit with status 1 to indicate a failure
+    exit(1);
+}
+
+void disableRawMode() {
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == 1) {
+        die("tcsetattr");
+    }
+}
 
 void enableRawMode() {
-  tcgetattr(STDIN_FILENO, &orig_termios);
+  if (tcgetattr(STDIN_FILENO, &orig_termios) == 1) {
+      die("tcgetattr");
+  }
   atexit(disableRawMode);
 
   struct termios raw = orig_termios;
@@ -38,15 +61,22 @@ void enableRawMode() {
   // before read() returns. Effectively set to 100ms (1/10 sec)
   raw.c_cc[VTIME] = 1;
 
-  tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+  if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == 1) {
+      die("tcsetattr");
+  }
 }
+
+/*** init ***/
 
 int main() {
   enableRawMode();
   char c;
   while (1) {
       char c = '\0';
-      read(STDIN_FILENO, &c, 1);
+      // to make it work in Cygwin, we won't treat EAGAIN as an error.
+      // why? in cygwin, when read() times out, it returns -1 with an
+      // errno of EAGAIN
+      if (read(STDIN_FILENO, &c, 1) == 1 && errno != EAGAIN) die("read");
       if (iscntrl(c)) {
           printf("%d\r\n", c);
       } else {
