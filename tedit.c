@@ -84,6 +84,19 @@ char editorReadKey() {
     return c;
 }
 
+/*** output ***/
+
+void editorRefreshScreen() {
+    // \x1b is the escape char, or 27 in decimal,
+    // We are writing an escape sequence to the terminal, which always
+    // start with the escape char, followed by `[` char. Escape sequences
+    // instruct the terminal to do various text formatting tasks, like
+    // coloring text, moving the cursor around, and clearing parts of the screen.
+    // `J` command is [Erase in Display](https://vt100.net/docs/vt100-ug/chapter3.html#ED),
+    // which clears the screen. 2 tells it to specifically clear the entire screen.
+    write(STDOUT_FILENO, "\x1b[2J", 4);
+}
+
 /*** input ***/
 
 void editorProcessKeypress() {
@@ -101,6 +114,7 @@ int main() {
   enableRawMode();
   char c;
   while (1) {
+      editorRefreshScreen();
       editorProcessKeypress();
   }
 
