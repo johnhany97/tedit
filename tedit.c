@@ -94,6 +94,13 @@ char editorReadKey() {
 
 /*** output ***/
 
+void editorDrawRows() {
+    int y;
+    for (y = 0; y < 24; y++) {
+        write(STDIN_FILENO, "~\r\n", 3);
+    }
+}
+
 void editorRefreshScreen() {
     // \x1b is the escape char, or 27 in decimal,
 
@@ -109,7 +116,11 @@ void editorRefreshScreen() {
     // to draw the editor interface from top to bottom.
     // H command [Cursor Position](https://vt100.net/docs/vt100-ug/chapter3.html#CUP)
     write(STDOUT_FILENO, "\x1b[H", 3);
+
+    editorDrawRows();
+    write(STDOUT_FILENO, "\x1b[H", 3);
 }
+
 
 /*** input ***/
 
