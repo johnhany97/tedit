@@ -13,10 +13,18 @@ void enableRawMode() {
   atexit(disableRawMode);
 
   struct termios raw = orig_termios;
-  // fix ctrl-m, and turn off ctrl-s / ctrl-q
-  raw.c_iflag &= ~(ICRNL | IXON);
+  // break conditions will cause sigint, disable that,
+  // and fix ctrl-m,
+  // and enable parity checking,
+  // and stop the 8th bit of each input byte being stripped,
+  // and turn off ctrl-s / ctrl-q,
+  raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
   // turn off all output processing
   raw.c_oflag &= ~(OPOST);
+  // CS8 is a bit mask with a multiple bits, which we sit using
+  // bitwise-OR unlike all the flags we are turning off.
+  // Sets the char size (CS) to 8 bits per byte.
+  raw.c_cflag |= (CS8);
   // turn off echoing (akin to sudo mode),
   // and canonical mode (byte-by-byte, instead of line-by-line),
   // and ctrl-v signal,
@@ -36,6 +44,6 @@ int main() {
           printf("%d ('%c')\r\n", c, c);
       }
   }
-    
+
   return 0;
 }
