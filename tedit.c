@@ -30,6 +30,13 @@ void enableRawMode() {
   // and ctrl-v signal,
   // and ctrl-c / ctrl-z signals
   raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+  // Sets the minimum number of bytes of input needed before read()
+  // can read. Set it to 0, so that read() returns as soon as there
+  // is any input to be read.
+  raw.c_cc[VMIN] = 0;
+  // Sets the maximum amount of time (in tenth of a second) to wait
+  // before read() returns. Effectively set to 100ms (1/10 sec)
+  raw.c_cc[VTIME] = 1;
 
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
@@ -37,12 +44,15 @@ void enableRawMode() {
 int main() {
   enableRawMode();
   char c;
-  while (read(STDIN_FILENO, &c, 1) == 1 && c != 'q') {
+  while (1) {
+      char c = '\0';
+      read(STDIN_FILENO, &c, 1);
       if (iscntrl(c)) {
           printf("%d\r\n", c);
       } else {
           printf("%d ('%c')\r\n", c, c);
       }
+      if (c == 'q') break;
   }
 
   return 0;
