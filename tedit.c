@@ -21,12 +21,20 @@ struct termios orig_termios;
 
 /*** terminal ***/
 
+void onExit() {
+    // Clear screen
+    write(STDOUT_FILENO, "\x1b[2J", 4);
+    write(STDOUT_FILENO, "\x1b[H", 3);
+}
+
 // Most C library functions that fail will set the global `errno` variable
 // to indicate what the error was. `perror()` looks at the global errno variable
 // and prints a descriptive error message for it. Also prints the string
 // given to it before it prints the error message, which is meant to provide
 // context about what part of your code caused the error.
 void die(const char *s) {
+    onExit();
+
     perror(s);
     // exit with status 1 to indicate a failure
     exit(1);
@@ -88,6 +96,7 @@ char editorReadKey() {
 
 void editorRefreshScreen() {
     // \x1b is the escape char, or 27 in decimal,
+
     // We are writing an escape sequence to the terminal, which always
     // start with the escape char, followed by `[` char. Escape sequences
     // instruct the terminal to do various text formatting tasks, like
@@ -95,6 +104,11 @@ void editorRefreshScreen() {
     // `J` command is [Erase in Display](https://vt100.net/docs/vt100-ug/chapter3.html#ED),
     // which clears the screen. 2 tells it to specifically clear the entire screen.
     write(STDOUT_FILENO, "\x1b[2J", 4);
+
+    // Reposition the cursor at the top-left corner, so that we're ready
+    // to draw the editor interface from top to bottom.
+    // H command [Cursor Position](https://vt100.net/docs/vt100-ug/chapter3.html#CUP)
+    write(STDOUT_FILENO, "\x1b[H", 3);
 }
 
 /*** input ***/
@@ -103,6 +117,7 @@ void editorProcessKeypress() {
     char c = editorReadKey();
     switch (c) {
         case CTRL_KEY('q'):
+            onExit();
             exit(0);
             break;
     }
