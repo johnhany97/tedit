@@ -6,6 +6,15 @@
 #include <termios.h>
 #include <unistd.h>
 
+/*** defines ***/
+
+// ctrl key combined with alphabetic keys mapps to bytes 1-26.\
+// This macro bitwsise-ANDs a char with the value 00011111, in binary
+// which in other words, sets the upper 3 bits of the char to 0. This
+// mirrors what the ctrl key does in the terminal: it strips bits 5 and 6
+// from whatever key you press in combination with ctrl, and sends that.
+#define CTRL_KEY(k) ((k) & 0x1f)
+
 /*** data ***/
 
 struct termios orig_termios;
@@ -66,23 +75,33 @@ void enableRawMode() {
   }
 }
 
+char editorReadKey() {
+    int nread;
+    char c;
+    while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
+        if (nread == -1 && errno != EAGAIN) die("read");
+    }
+    return c;
+}
+
+/*** input ***/
+
+void editorProcessKeypress() {
+    char c = editorReadKey();
+    switch (c) {
+        case CTRL_KEY('q'):
+            exit(0);
+            break;
+    }
+}
+
 /*** init ***/
 
 int main() {
   enableRawMode();
   char c;
   while (1) {
-      char c = '\0';
-      // to make it work in Cygwin, we won't treat EAGAIN as an error.
-      // why? in cygwin, when read() times out, it returns -1 with an
-      // errno of EAGAIN
-      if (read(STDIN_FILENO, &c, 1) == -1 && errno != EAGAIN) die("read");
-      if (iscntrl(c)) {
-          printf("%d\r\n", c);
-      } else {
-          printf("%d ('%c')\r\n", c, c);
-      }
-      if (c == 'q') break;
+      editorProcessKeypress();
   }
 
   return 0;
