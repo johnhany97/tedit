@@ -76,7 +76,7 @@ int main() {
       // to make it work in Cygwin, we won't treat EAGAIN as an error.
       // why? in cygwin, when read() times out, it returns -1 with an
       // errno of EAGAIN
-      if (read(STDIN_FILENO, &c, 1) == 1 && errno != EAGAIN) die("read");
+      if (read(STDIN_FILENO, &c, 1) == -1 && errno != EAGAIN) die("read");
       if (iscntrl(c)) {
           printf("%d\r\n", c);
       } else {
